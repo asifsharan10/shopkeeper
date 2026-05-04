@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Settings from './pages/Settings'
+import Landing from './pages/Landing'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -36,6 +37,7 @@ function App() {
       <Route path="/dashboard" element={session ? <Dashboard session={session} /> : <Navigate to="/login" />} />
       <Route path="/settings" element={session ? <Settings session={session} /> : <Navigate to="/login" />} />
       <Route path="*" element={<Navigate to={session ? "/dashboard" : "/login"} />} />
+      <Route path="/" element={<Landing />} />
     </Routes>
   )
 }
