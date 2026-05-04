@@ -124,7 +124,7 @@ export default function Dashboard({ session }) {
             </div>
           ))}
         </nav>
-        <div style={s.signOut} onClick={signOut}>Sign out</div>
+        <div style={s.signOut} onClick={signOut}>🚪 Sign out</div>
       </div>
 
       {/* Main content */}
@@ -308,7 +308,7 @@ const s = {
   storeName: { fontSize: 12, color: '#94a3b8', padding: '0 20px 20px' },
   navItem: { padding: '10px 20px', cursor: 'pointer', fontSize: 14, color: '#64748b', borderRadius: 8, margin: '2px 8px', textTransform: 'capitalize' },
   navActive: { background: '#eff6ff', color: '#2563eb', fontWeight: 500 },
-  signOut: { marginTop: 'auto', padding: '10px 20px', cursor: 'pointer', fontSize: 13, color: '#94a3b8' },
+  signOut: { marginTop: 'auto', margin: '8px', padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: '#ef4444', borderRadius: 8, border: '1px solid #fee2e2', textAlign: 'center', background: '#fff5f5' },
   main: { marginLeft: 220, flex: 1, padding: '40px 48px', maxWidth: 800 },
   pageTitle: { fontSize: 22, fontWeight: 600, color: '#1e293b', margin: '0 0 4px' },
   pageSub: { fontSize: 14, color: '#64748b', margin: '0 0 28px' },
