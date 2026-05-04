@@ -15,13 +15,13 @@ export default function Dashboard({ session }) {
     welcome_message: '',
     widget_color: '#2563eb'
   })
+  const [analytics, setAnalytics] = useState(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
 
-  useEffect(() => {
-    loadStore()
-  }, [])
+  useEffect(() => { loadStore() }, [])
 
   async function loadStore() {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('stores')
       .select('*')
       .eq('email', session.user.email)
@@ -59,8 +59,24 @@ export default function Dashboard({ session }) {
     setSelectedConv(convId)
   }
 
+  async function loadAnalytics() {
+    if (!store) return
+    setAnalyticsLoading(true)
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/analytics`, {
+        headers: { 'x-api-key': store.api_key }
+      })
+      const data = await res.json()
+      setAnalytics(data)
+    } catch (e) {
+      console.error('Analytics error:', e)
+    }
+    setAnalyticsLoading(false)
+  }
+
   useEffect(() => {
     if (activeTab === 'conversations') loadConversations()
+    if (activeTab === 'analytics') loadAnalytics()
   }, [activeTab, store])
 
   async function saveSettings() {
@@ -106,18 +122,18 @@ export default function Dashboard({ session }) {
 
   return (
     <div style={s.page}>
-      {/* Sidebar */}
       <div style={s.sidebar}>
         <div style={s.logo}>🛒 Shopkeeper</div>
         <div style={s.storeName}>{store.name}</div>
         <nav>
-          {['overview', 'setup', 'conversations', 'customize'].map(tab => (
+          {['overview', 'analytics', 'setup', 'conversations', 'customize'].map(tab => (
             <div
               key={tab}
               style={{ ...s.navItem, ...(activeTab === tab ? s.navActive : {}) }}
               onClick={() => setActiveTab(tab)}
             >
               {tab === 'overview' && '📊 Overview'}
+              {tab === 'analytics' && '📈 Analytics'}
               {tab === 'setup' && '⚙️ Bot Setup'}
               {tab === 'conversations' && '💬 Conversations'}
               {tab === 'customize' && '🎨 Customize'}
@@ -127,7 +143,6 @@ export default function Dashboard({ session }) {
         <div style={s.signOut} onClick={signOut}>🚪 Sign out</div>
       </div>
 
-      {/* Main content */}
       <div style={s.main}>
 
         {/* OVERVIEW TAB */}
@@ -135,14 +150,11 @@ export default function Dashboard({ session }) {
           <div>
             <h2 style={s.pageTitle}>Overview</h2>
             <p style={s.pageSub}>Everything you need to get started.</p>
-
             <div style={s.grid2}>
               <div style={s.statCard}>
                 <div style={s.statLabel}>Your API Key</div>
                 <div style={s.statValue}>{store.api_key.slice(0, 20)}...</div>
-                <button style={s.copyBtn} onClick={() => copyToClipboard(store.api_key)}>
-                  Copy full key
-                </button>
+                <button style={s.copyBtn} onClick={() => copyToClipboard(store.api_key)}>Copy full key</button>
               </div>
               <div style={s.statCard}>
                 <div style={s.statLabel}>Widget status</div>
@@ -150,18 +162,14 @@ export default function Dashboard({ session }) {
                 <div style={s.statSub}>Ready to embed on your site</div>
               </div>
             </div>
-
             <div style={s.section}>
               <div style={s.sectionTitle}>Your widget code</div>
               <p style={s.sectionSub}>Paste this one line before the closing &lt;/body&gt; tag on your website.</p>
               <div style={s.codeBox}>
                 <code style={s.code}>{widgetCode}</code>
               </div>
-              <button style={s.btn} onClick={() => copyToClipboard(widgetCode)}>
-                Copy widget code
-              </button>
+              <button style={s.btn} onClick={() => copyToClipboard(widgetCode)}>Copy widget code</button>
             </div>
-
             <div style={s.section}>
               <div style={s.sectionTitle}>Quick start guide</div>
               <div style={s.steps}>
@@ -174,12 +182,92 @@ export default function Dashboard({ session }) {
           </div>
         )}
 
+        {/* ANALYTICS TAB */}
+        {activeTab === 'analytics' && (
+          <div>
+            <h2 style={s.pageTitle}>Analytics</h2>
+            <p style={s.pageSub}>How your AI assistant is performing.</p>
+
+            {analyticsLoading && <p style={{ color: '#64748b', fontSize: 14 }}>Loading analytics...</p>}
+
+            {analytics && (
+              <div>
+                <div style={s.grid3}>
+                  <div style={s.statCard}>
+                    <div style={s.statLabel}>Total messages</div>
+                    <div style={{ ...s.statValue, fontSize: 28 }}>{analytics.total_messages}</div>
+                  </div>
+                  <div style={s.statCard}>
+                    <div style={s.statLabel}>Total conversations</div>
+                    <div style={{ ...s.statValue, fontSize: 28 }}>{analytics.total_conversations}</div>
+                  </div>
+                  <div style={s.statCard}>
+                    <div style={s.statLabel}>Messages this month</div>
+                    <div style={{ ...s.statValue, fontSize: 28 }}>{analytics.messages_this_month}</div>
+                  </div>
+                </div>
+
+                <div style={s.section}>
+                  <div style={s.sectionTitle}>Customer messages — last 7 days</div>
+                  <p style={s.sectionSub}>Number of messages sent by customers each day.</p>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 160, marginTop: 16 }}>
+                    {analytics.messages_last_7_days.map((day, i) => {
+                      const max = Math.max(...analytics.messages_last_7_days.map(d => d.messages), 1)
+                      const height = Math.max((day.messages / max) * 120, 4)
+                      return (
+                        <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                          <div style={{ fontSize: 11, color: '#64748b' }}>{day.messages}</div>
+                          <div style={{ width: '100%', height: height, background: '#2563eb', borderRadius: 4, opacity: day.messages === 0 ? 0.2 : 1 }} />
+                          <div style={{ fontSize: 10, color: '#94a3b8', textAlign: 'center' }}>
+                            {new Date(day.date).toLocaleDateString('en', { weekday: 'short' })}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div style={s.section}>
+                  <div style={s.sectionTitle}>Performance summary</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
+                    <div style={s.analyticsRow}>
+                      <span style={s.analyticsLabel}>Average messages per conversation</span>
+                      <span style={s.analyticsValue}>
+                        {analytics.total_conversations > 0
+                          ? (analytics.total_messages / analytics.total_conversations).toFixed(1)
+                          : '0'}
+                      </span>
+                    </div>
+                    <div style={s.analyticsRow}>
+                      <span style={s.analyticsLabel}>Messages in last 7 days</span>
+                      <span style={s.analyticsValue}>
+                        {analytics.messages_last_7_days.reduce((a, b) => a + b.messages, 0)}
+                      </span>
+                    </div>
+                    <div style={s.analyticsRow}>
+                      <span style={s.analyticsLabel}>Active days this week</span>
+                      <span style={s.analyticsValue}>
+                        {analytics.messages_last_7_days.filter(d => d.messages > 0).length} / 7
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!analyticsLoading && !analytics && (
+              <div style={s.section}>
+                <p style={{ color: '#94a3b8', fontSize: 14 }}>No data yet. Once customers start chatting, your analytics will appear here.</p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* SETUP TAB */}
         {activeTab === 'setup' && (
           <div>
             <h2 style={s.pageTitle}>Bot Setup</h2>
             <p style={s.pageSub}>Tell your AI everything about your store. The more detail you give, the better it answers.</p>
-
             <div style={s.section}>
               <div style={s.sectionTitle}>Store information & products</div>
               <p style={s.sectionSub}>Include: store name, what you sell, product names & prices, shipping policy, return policy, store hours, contact info.</p>
@@ -191,7 +279,6 @@ export default function Dashboard({ session }) {
                 onChange={e => setForm(prev => ({ ...prev, store_context: e.target.value }))}
               />
             </div>
-
             <div style={s.section}>
               <div style={s.sectionTitle}>Welcome message</div>
               <p style={s.sectionSub}>First message customers see when they open the chat.</p>
@@ -203,7 +290,6 @@ export default function Dashboard({ session }) {
                 placeholder="Hi there! How can I help you today?"
               />
             </div>
-
             {saveMsg && (
               <p style={{ color: saveMsg.includes('Error') ? '#dc2626' : '#16a34a', marginBottom: 12, fontSize: 14 }}>
                 {saveMsg}
@@ -220,7 +306,6 @@ export default function Dashboard({ session }) {
           <div>
             <h2 style={s.pageTitle}>Conversations</h2>
             <p style={s.pageSub}>All customer chats from your widget.</p>
-
             <div style={s.convLayout}>
               <div style={s.convList}>
                 {conversations.length === 0 && (
@@ -237,7 +322,6 @@ export default function Dashboard({ session }) {
                   </div>
                 ))}
               </div>
-
               <div style={s.convMessages}>
                 {!selectedConv && (
                   <p style={{ color: '#94a3b8', fontSize: 14, padding: 16 }}>Select a conversation to view messages.</p>
@@ -258,33 +342,31 @@ export default function Dashboard({ session }) {
           <div>
             <h2 style={s.pageTitle}>Customize</h2>
             <p style={s.pageSub}>Match the widget to your brand.</p>
-
             <div style={s.section}>
               <div style={s.sectionTitle}>Widget color</div>
               <p style={s.sectionSub}>Choose the color of the chat bubble and header.</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 8 }}>
-  <input
-    type="color"
-    value={form.widget_color}
-    onChange={e => setForm(prev => ({ ...prev, widget_color: e.target.value }))}
-    style={{ width: 48, height: 48, border: 'none', borderRadius: 8, cursor: 'pointer' }}
-  />
-  <input
-    type="text"
-    value={form.widget_color}
-    onChange={e => {
-      const val = e.target.value
-      if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
-        setForm(prev => ({ ...prev, widget_color: val }))
-      }
-    }}
-    style={{ width: 100, padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, fontFamily: 'monospace' }}
-    placeholder="#2563eb"
-  />
-  <div style={{ width: 36, height: 36, borderRadius: '50%', background: form.widget_color }} />
-</div>
+                <input
+                  type="color"
+                  value={form.widget_color}
+                  onChange={e => setForm(prev => ({ ...prev, widget_color: e.target.value }))}
+                  style={{ width: 48, height: 48, border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                />
+                <input
+                  type="text"
+                  value={form.widget_color}
+                  onChange={e => {
+                    const val = e.target.value
+                    if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
+                      setForm(prev => ({ ...prev, widget_color: val }))
+                    }
+                  }}
+                  style={{ width: 100, padding: '8px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, fontFamily: 'monospace' }}
+                  placeholder="#2563eb"
+                />
+                <div style={{ width: 36, height: 36, borderRadius: '50%', background: form.widget_color }} />
+              </div>
             </div>
-
             {saveMsg && (
               <p style={{ color: saveMsg.includes('Error') ? '#dc2626' : '#16a34a', marginBottom: 12, fontSize: 14 }}>
                 {saveMsg}
@@ -295,6 +377,7 @@ export default function Dashboard({ session }) {
             </button>
           </div>
         )}
+
       </div>
     </div>
   )
@@ -313,6 +396,7 @@ const s = {
   pageTitle: { fontSize: 22, fontWeight: 600, color: '#1e293b', margin: '0 0 4px' },
   pageSub: { fontSize: 14, color: '#64748b', margin: '0 0 28px' },
   grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 },
+  grid3: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 28 },
   statCard: { background: 'white', border: '1px solid #e2e8f0', borderRadius: 12, padding: '20px 24px' },
   statLabel: { fontSize: 12, color: '#94a3b8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' },
   statValue: { fontSize: 16, fontWeight: 500, color: '#1e293b', marginBottom: 8 },
@@ -339,5 +423,8 @@ const s = {
   msgBubble: { padding: '10px 14px', borderRadius: 12, maxWidth: '80%', fontSize: 13 },
   msgBot: { background: '#f1f5f9', alignSelf: 'flex-start' },
   msgUser: { background: '#eff6ff', alignSelf: 'flex-end' },
-  msgRole: { fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: '#94a3b8', marginBottom: 4 }
+  msgRole: { fontSize: 10, fontWeight: 600, textTransform: 'uppercase', color: '#94a3b8', marginBottom: 4 },
+  analyticsRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid #f1f5f9' },
+  analyticsLabel: { fontSize: 14, color: '#64748b' },
+  analyticsValue: { fontSize: 16, fontWeight: 500, color: '#1e293b' },
 }
