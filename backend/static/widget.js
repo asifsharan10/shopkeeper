@@ -1,5 +1,5 @@
 (function () {
-  const SHOPKEEPER_API = "http://127.0.0.1:8000";
+  const SHOPKEEPER_API = "https://shopkeeper-api.onrender.com";
   const API_KEY = document.currentScript.getAttribute("data-api-key") || "";
   let sessionId = null;
   let isOpen = false;
