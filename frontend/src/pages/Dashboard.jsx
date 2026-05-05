@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 
+const isMobile = window.innerWidth < 768
+
 export default function Dashboard({ session }) {
   const [store, setStore] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -10,13 +12,14 @@ export default function Dashboard({ session }) {
   const [conversations, setConversations] = useState([])
   const [selectedConv, setSelectedConv] = useState(null)
   const [messages, setMessages] = useState([])
+  const [analytics, setAnalytics] = useState(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [form, setForm] = useState({
     store_context: '',
     welcome_message: '',
     widget_color: '#2563eb'
   })
-  const [analytics, setAnalytics] = useState(null)
-  const [analyticsLoading, setAnalyticsLoading] = useState(false)
 
   useEffect(() => { loadStore() }, [])
 
@@ -110,6 +113,11 @@ export default function Dashboard({ session }) {
     alert('Copied to clipboard!')
   }
 
+  function switchTab(tab) {
+    setActiveTab(tab)
+    setSidebarOpen(false)
+  }
+
   if (loading) return (
     <div style={s.loading}>Loading your dashboard...</div>
   )
@@ -122,7 +130,21 @@ export default function Dashboard({ session }) {
 
   return (
     <div style={s.page}>
-      <div style={s.sidebar}>
+
+      {/* Overlay for mobile */}
+      {isMobile && sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 99 }}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div style={{
+        ...s.sidebar,
+        transform: isMobile && !sidebarOpen ? 'translateX(-100%)' : 'translateX(0)',
+        transition: 'transform 0.3s'
+      }}>
         <div style={s.logo}>🛒 Shopkeeper</div>
         <div style={s.storeName}>{store.name}</div>
         <nav>
@@ -130,7 +152,7 @@ export default function Dashboard({ session }) {
             <div
               key={tab}
               style={{ ...s.navItem, ...(activeTab === tab ? s.navActive : {}) }}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => switchTab(tab)}
             >
               {tab === 'overview' && '📊 Overview'}
               {tab === 'analytics' && '📈 Analytics'}
@@ -143,7 +165,18 @@ export default function Dashboard({ session }) {
         <div style={s.signOut} onClick={signOut}>🚪 Sign out</div>
       </div>
 
+      {/* Main content */}
       <div style={s.main}>
+
+        {/* Mobile menu button */}
+        {isMobile && (
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            style={s.menuBtn}
+          >
+            ☰ Menu
+          </button>
+        )}
 
         {/* OVERVIEW TAB */}
         {activeTab === 'overview' && (
@@ -187,9 +220,7 @@ export default function Dashboard({ session }) {
           <div>
             <h2 style={s.pageTitle}>Analytics</h2>
             <p style={s.pageSub}>How your AI assistant is performing.</p>
-
             {analyticsLoading && <p style={{ color: '#64748b', fontSize: 14 }}>Loading analytics...</p>}
-
             {analytics && (
               <div>
                 <div style={s.grid3}>
@@ -206,7 +237,6 @@ export default function Dashboard({ session }) {
                     <div style={{ ...s.statValue, fontSize: 28 }}>{analytics.messages_this_month}</div>
                   </div>
                 </div>
-
                 <div style={s.section}>
                   <div style={s.sectionTitle}>Customer messages — last 7 days</div>
                   <p style={s.sectionSub}>Number of messages sent by customers each day.</p>
@@ -226,7 +256,6 @@ export default function Dashboard({ session }) {
                     })}
                   </div>
                 </div>
-
                 <div style={s.section}>
                   <div style={s.sectionTitle}>Performance summary</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
@@ -254,7 +283,6 @@ export default function Dashboard({ session }) {
                 </div>
               </div>
             )}
-
             {!analyticsLoading && !analytics && (
               <div style={s.section}>
                 <p style={{ color: '#94a3b8', fontSize: 14 }}>No data yet. Once customers start chatting, your analytics will appear here.</p>
@@ -309,7 +337,7 @@ export default function Dashboard({ session }) {
             <div style={s.convLayout}>
               <div style={s.convList}>
                 {conversations.length === 0 && (
-                  <p style={{ color: '#94a3b8', fontSize: 14, padding: 16 }}>No conversations yet. Once customers chat on your site, they'll appear here.</p>
+                  <p style={{ color: '#94a3b8', fontSize: 14, padding: 16 }}>No conversations yet.</p>
                 )}
                 {conversations.map(conv => (
                   <div
@@ -386,17 +414,18 @@ export default function Dashboard({ session }) {
 const s = {
   page: { display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif', background: '#f8fafc' },
   loading: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', fontFamily: 'sans-serif', color: '#64748b' },
-  sidebar: { width: 220, background: 'white', borderRight: '1px solid #e2e8f0', padding: '24px 0', display: 'flex', flexDirection: 'column', position: 'fixed', height: '100vh' },
+  sidebar: { width: 220, background: 'white', borderRight: '1px solid #e2e8f0', padding: '24px 0', display: 'flex', flexDirection: 'column', position: 'fixed', height: '100vh', zIndex: 100 },
   logo: { fontSize: 18, fontWeight: 600, padding: '0 20px 4px', color: '#1e293b' },
   storeName: { fontSize: 12, color: '#94a3b8', padding: '0 20px 20px' },
   navItem: { padding: '10px 20px', cursor: 'pointer', fontSize: 14, color: '#64748b', borderRadius: 8, margin: '2px 8px', textTransform: 'capitalize' },
   navActive: { background: '#eff6ff', color: '#2563eb', fontWeight: 500 },
   signOut: { marginTop: 'auto', margin: '8px', padding: '10px 12px', cursor: 'pointer', fontSize: 13, color: '#ef4444', borderRadius: 8, border: '1px solid #fee2e2', textAlign: 'center', background: '#fff5f5' },
-  main: { marginLeft: 220, flex: 1, padding: '40px 48px', maxWidth: 800 },
-  pageTitle: { fontSize: 22, fontWeight: 600, color: '#1e293b', margin: '0 0 4px' },
+  main: { marginLeft: isMobile ? 0 : 220, flex: 1, padding: isMobile ? '20px 16px' : '40px 48px', maxWidth: '100%', boxSizing: 'border-box' },
+  menuBtn: { background: '#2563eb', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, cursor: 'pointer', marginBottom: 20, width: '100%' },
+  pageTitle: { fontSize: isMobile ? 18 : 22, fontWeight: 600, color: '#1e293b', margin: '0 0 4px' },
   pageSub: { fontSize: 14, color: '#64748b', margin: '0 0 28px' },
-  grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 },
-  grid3: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 28 },
+  grid2: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 28 },
+  grid3: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 16, marginBottom: 28 },
   statCard: { background: 'white', border: '1px solid #e2e8f0', borderRadius: 12, padding: '20px 24px' },
   statLabel: { fontSize: 12, color: '#94a3b8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' },
   statValue: { fontSize: 16, fontWeight: 500, color: '#1e293b', marginBottom: 8 },
@@ -413,7 +442,7 @@ const s = {
   steps: { display: 'flex', flexDirection: 'column', gap: 12 },
   step: { display: 'flex', alignItems: 'center', gap: 12, fontSize: 14, color: '#374151' },
   stepNum: { width: 28, height: 28, borderRadius: '50%', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600, flexShrink: 0 },
-  convLayout: { display: 'grid', gridTemplateColumns: '240px 1fr', gap: 16, height: '60vh' },
+  convLayout: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '240px 1fr', gap: 16, minHeight: '60vh' },
   convList: { background: 'white', border: '1px solid #e2e8f0', borderRadius: 12, overflowY: 'auto' },
   convItem: { padding: '12px 16px', cursor: 'pointer', borderBottom: '1px solid #f1f5f9' },
   convItemActive: { background: '#eff6ff' },

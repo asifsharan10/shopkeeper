@@ -147,12 +147,12 @@ export default function Landing() {
 
 const s = {
   page: { fontFamily: 'sans-serif', color: '#1e293b', overflowX: 'hidden' },
-  nav: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 48px', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 100 },
+  nav: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 8%', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 100, boxSizing: 'border-box', width: '100%' },
   logo: { fontSize: 20, fontWeight: 600 },
   navLinks: { display: 'flex', alignItems: 'center', gap: 16 },
   navLink: { color: '#64748b', textDecoration: 'none', fontSize: 14 },
   navBtn: { background: '#2563eb', color: 'white', padding: '8px 18px', borderRadius: 8, textDecoration: 'none', fontSize: 14, fontWeight: 500 },
-  hero: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '80px 48px', gap: 48, background: 'white', flexWrap: 'wrap' },
+  hero: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '80px 8%', gap: 48, background: 'white', flexWrap: 'wrap', width: '100%', boxSizing: 'border-box' },
   heroInner: { flex: 1, minWidth: 300, maxWidth: 560 },
   badge: { display: 'inline-block', background: '#eff6ff', color: '#2563eb', fontSize: 13, fontWeight: 500, padding: '6px 14px', borderRadius: 20, marginBottom: 24 },
   heroTitle: { fontSize: 56, fontWeight: 700, lineHeight: 1.1, margin: '0 0 20px', color: '#0f172a' },
