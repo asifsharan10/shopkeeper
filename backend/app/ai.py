@@ -7,7 +7,7 @@ load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 MODELS = {
-    "groq": "llama-3.1-8b-instant",
+    "groq": "llama-3.3-70b-versatile",
     "groq_large": "llama3-70b-8192",
     "gemini": "gemini-2.0-flash",
     "claude": "claude-sonnet-4-20250514",
