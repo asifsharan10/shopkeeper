@@ -146,7 +146,7 @@ export default function Landing() {
 }
 
 const s = {
-  page: { fontFamily: 'sans-serif', color: '#1e293b', overflowX: 'hidden' },
+  page: { fontFamily: 'sans-serif', color: '#1e293b', overflowX: 'hidden', width: '100%', minHeight: '100vh' },
   nav: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '18px 8%', borderBottom: '1px solid #e2e8f0', background: 'white', position: 'sticky', top: 0, zIndex: 100, boxSizing: 'border-box', width: '100%' },
   logo: { fontSize: 20, fontWeight: 600 },
   navLinks: { display: 'flex', alignItems: 'center', gap: 16 },
